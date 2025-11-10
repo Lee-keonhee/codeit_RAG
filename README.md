@@ -83,7 +83,7 @@ rag-project/
 
 ```bash
 # 저장소 클론
-git clone <repository-url>
+git clone git@github.com:Lee-keonhee/codeit_RAG.git
 cd rag-project
 
 # 가상환경 생성 및 활성화

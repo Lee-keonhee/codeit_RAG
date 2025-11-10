@@ -7,7 +7,7 @@ __pycache__/
 data/
 .idea
 .env
-.env.example
+
 
 *.faiss
 *.index
