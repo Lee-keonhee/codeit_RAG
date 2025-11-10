@@ -1,0 +1,62 @@
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+data/
+.idea
+.env
+.env.example
+
+*.faiss
+*.index
+*.bin
+
+models/
+checkpoints/
+
+# ============================================
+# Jupyter Notebook
+# ============================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Jupyter 임시 파일
+.jupyter/
+
+# ============================================
+# IDE 및 에디터
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+ ============================================
+# OS 관련
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============================================
+# 기타
+# ============================================
+# 압축 파일
+*.zip
+*.tar.gz
+*.rar
+
+# 백업 파일
+*.bak
+*.backup

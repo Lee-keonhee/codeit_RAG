@@ -1,0 +1,10 @@
+python-dotenv
+pyyaml
+pandas
+pypdf
+openai
+faiss-cpu
+numpy
+tqdm
+jupyter
+ipykernel
