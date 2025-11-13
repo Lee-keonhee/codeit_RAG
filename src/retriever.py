@@ -1,10 +1,6 @@
 from typing import List, Dict, Optional
-from dotenv import load_dotenv
 from sentence_transformers import CrossEncoder
 from vector_store import load_vector_store
-
-# 환경 변수 로드
-#load_dotenv()
 
 # ============================
 # 기본 검색 함수
@@ -24,32 +20,46 @@ def retrieve( query: str, vector_store_path: str,
     """
 
     # 벡터스토어 로드
-    vectorstore = load_vector_store(vector_store_path)
+    try:
+        vectorstore = load_vector_store(vector_store_path)
+    except Exception as e:
+        print(f"벡터스토어 로드 실패: {e}")
+        return []
 
     # 메타데이터 필터 적용
     # LangChain FAISS는 where 필터 지원 안 함 → 직접 필터링 필요
-    docs = vectorstore.similarity_search_with_score(query, k=top_k * 2)
+    docs = vectorstore.similarity_search_with_score(query, k=top_k * 5)
+    #print('######DEBUG', len(docs))
     
-    results = []
+    results = [] 
     for i, (doc, score) in enumerate(docs):
         meta = getattr(doc, "metadata", {})
         
-        # 필터 조건 확인
+        # 필터 조건을 만족하는지 확인
+        match = True
         if filters:
-            match = all(meta.get(k) == v for k, v in filters.items())
-            
+            # 헬퍼 함수를 사용하여 숫자 비교 및 정확한 값 필터링 수행
+            match = _apply_faiss_filter(meta, filters)
             if not match:
-                continue
+                continue # 조건 불일치 시 건너뛰기
 
-        doc_id = meta['doc_id']
-        chunk_index = meta['chunk_index']
+        # 필터 조건을 통과한 경우에만 결과에 추가
+        if match:
+            doc_id = meta['doc_id']
+            chunk_index = meta['chunk_index']
         
-        results.append({
-            "chunk_id": f"{doc_id}_chunk_{chunk_index}", #doc_1_chunk_12 형태
-            "text": doc.page_content,
-            "score": float(score),
-            "metadata": meta
-        })
+            results.append({
+                "chunk_id": f"{doc_id}_chunk_{chunk_index}", #doc_1_chunk_12 형태
+                "text": doc.page_content,
+                "score": float(score),
+                "metadata": meta
+            })
+
+        # 필터링 후 top_k 개수를 확보했는지 확인 후 중단
+        if len(results) >= top_k:
+            break
+            
+    #print(f"DEBUG: Re-ranking 시작. 대상 문서 개수: {len(results)}개.")
 
     # Reranking 
     results = rerank_results(query, results)
@@ -75,7 +85,7 @@ def rerank_results(query: str, results: List[Dict]) -> List[Dict]:
         scores = model.predict(pairs)
 
         for r, s in zip(results, scores):
-            r["rerank_score"] = float(s)
+            r["rerank_score"] = float(s) # 기존 유사도 스코어와는 별개로 재정렬 스코어 추가
 
         results = sorted(results, key=lambda x: x.get("rerank_score", 0), reverse=True)
         return results
@@ -142,8 +152,8 @@ def _apply_faiss_filter(meta: Dict, filters: Dict) -> bool:
 """
 if __name__ == "__main__":
     query_input = {
-        "query": "국민연금공단 이러닝시스템 요구사항은?",
-        "filters": {"발주 기관": "국민연금공단"},
+        "query": "대학교중에 ai에 관련된 사업이 있나?",
+        "filters": {"사업 금액": {"$gt": 743070000}},
         "top_k": 5
     }
 
@@ -155,6 +165,7 @@ if __name__ == "__main__":
         top_k=query_input["top_k"],
         filters=query_input["filters"]
     )
+    
 
     for r in results:
         print("-" * 80)
