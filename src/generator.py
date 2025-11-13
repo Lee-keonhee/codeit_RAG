@@ -93,7 +93,7 @@ print(f"총 {processed_file_count}개 PDF에서 {len(all_chunks)}개 청크 생�
 def truncate_chunks_by_tokens(
     chunks: List[Dict],
     max_tokens: int = 3000,
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-5-mini"
 ) -> List[Dict]:
     """컨텍스트가 너무 길어지지 않도록 토큰 수를 제한"""
     try:
