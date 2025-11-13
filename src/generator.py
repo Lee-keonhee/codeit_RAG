@@ -15,6 +15,7 @@ from pypdf import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
+from dotenv import load_dotenv
 import tiktoken
 
 ## 로깅 설정
@@ -151,6 +152,8 @@ SYSTEM_PROMPTS = {
 - 답변은 반드시 제공된 '참고 문서 조각'의 내용에 기반해야 합니다.
 - 문서에 내용이 없는 경우, '제공된 문서에서는 해당 정보를 찾을 수 없습니다.'라고 명확히 답변하세요.
 - 답변 시 어떤 문서 조각을 참고했는지 본문에 명시할 필요는 없습니다.
+- 숫자/날짜/금액은 정확히 인용해야 합니다.
+- 애매한 표현 지양, 명확한 사실을 전달해야 합니다.
 - '입찰메이트'의 전문 컨설턴트로서 친절하고 명확한 톤을 유지하세요.""",
 
     "technical": """당신은 기술 제안서 작성 전문가입니다.
@@ -322,7 +325,7 @@ def generate_with_cache(
 
     return final_response
 
-# 6. 대화 관리
+# 5. 대화 관리
 ## 대화 관리자
 class ConversationManager:
     def __init__(self, max_history: int = 5):
@@ -343,9 +346,18 @@ class ConversationManager:
         self.history = []
 
 ## 실행
+# .env 파일에서 환경변수 로드
+load_dotenv()
+
+# 환경변수에서 API 키 가져오기
+api_key = os.getenv("OPENAI_API_KEY")
+
+# API 키 존재 여부 확인
+if not api_key:
+    raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인하세요.")
+
 # OpenAI 클라이언트 초기화
-os.environ["OPENAI_API_KEY"] = "비밀이오~"
-client = OpenAI()
+client = OpenAI(api_key=api_key)
 
 # 입력 데이터
 user_query = "국민연금공단 이러닝시스템 요구사항은?"
@@ -362,10 +374,10 @@ mock_retrieved_chunks = [
 ]
 
 # Generation 설정
-model_to_use = "gpt-4o-mini"
+model_to_use = "gpt-5-nano" # gpt-5 > gpt-5-mini > gpt-5-nano
 generation_config = {
-    "temperature": 0.1,
-    "max_tokens": 1024,
+    "temperature": 1,
+    "max_completion_tokens": 1024,
     "top_p": 1.0,
 }
 
