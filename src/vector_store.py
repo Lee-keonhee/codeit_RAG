@@ -98,9 +98,10 @@ def create_vector_store(chunks:List[Dict]):
     '''
     이미 임베딩된 청크로 LangChain VectorStore 생성
     '''
-    # 1. 텍스트와 임베딩 분리
+    # 1. 텍스트, 임베딩, 메타데이터 분리
     texts = [chunk['text'] for chunk in chunks]
     embeddings_list = [chunk['embedding'] for chunk in chunks]
+    metadatas = [chunk.get('metadata', {}) for chunk in chunks]
 
     # 2. 임베딩 모델 초기화 (검색 시 쿼리 임베딩용)
     embedding_model = OpenAIEmbeddings(
@@ -112,7 +113,8 @@ def create_vector_store(chunks:List[Dict]):
     text_embedding_pairs = list(zip(texts, embeddings_list))
     vectorstore = FAISS.from_embeddings(
         text_embeddings=text_embedding_pairs,
-        embedding=embedding_model
+        embedding=embedding_model,
+        metadatas=metadatas
     )
 
     return vectorstore
