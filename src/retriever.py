@@ -1,37 +1,31 @@
 from typing import List, Dict, Optional
 from sentence_transformers import CrossEncoder
+from langchain_community.vectorstores import FAISS
 from vector_store import load_vector_store
 
 # ============================
 # 기본 검색 함수
 # ============================
 
-def retrieve( query: str, vector_store_path: str, 
+def retrieve( query: str, vectorstore: FAISS,
               top_k: int = 5, filters: Optional[Dict] = None) -> List[Dict]:
     """
-    쿼리 기반 관련 문서 검색
+    쿼리 기반 관련 문서 검색, 
     입력:
         query: 사용자 입력 질의 (예: "국민연금공단 이러닝시스템 요구사항은?")
-        vector_store_path: 저장된 VectorStore 디렉터리 경로
+        vectorstore: 이미 로드된 VectorStore 객체를 사용
         top_k: 상위 검색 개수
         filters: 메타데이터 필터 (예: {"발주기관": "국민연금공단"})
     출력:
         List[Dict]: 유사도 높은 청크 리스트
     """
 
-    # 벡터스토어 로드
-    try:
-        vectorstore = load_vector_store(vector_store_path)
-    except Exception as e:
-        print(f"벡터스토어 로드 실패: {e}")
-        return []
-
-    # 메타데이터 필터 적용
-    # LangChain FAISS는 where 필터 지원 안 함 → 직접 필터링 필요
+    # 이전 로드 로직 제거 (RAGPipeline에서 이미 로드하여 vectorstore에 전달했으므로)
+    # 유사도 검색
     docs = vectorstore.similarity_search_with_score(query, k=top_k * 5)
-    #print('######DEBUG', len(docs))
     
     results = [] 
+    #Post-query 필터링
     for i, (doc, score) in enumerate(docs):
         meta = getattr(doc, "metadata", {})
         
@@ -51,7 +45,7 @@ def retrieve( query: str, vector_store_path: str,
             results.append({
                 "chunk_id": f"{doc_id}_chunk_{chunk_index}", #doc_1_chunk_12 형태
                 "text": doc.page_content,
-                "score": float(score),
+                "score": float(score), #유사도 점수
                 "metadata": meta
             })
 
@@ -144,31 +138,3 @@ def _apply_faiss_filter(meta: Dict, filters: Dict) -> bool:
             return False
 
     return True # 모든 필터 조건을 통과함
-
-
-# ============================
-# 실행 예시
-# ============================
-"""
-if __name__ == "__main__":
-    query_input = {
-        "query": "대학교중에 ai에 관련된 사업이 있나?",
-        "filters": {"사업 금액": {"$gt": 743070000}},
-        "top_k": 5
-    }
-
-    vector_store_path = "../vector_store"  # vector_store.py에서 저장한 경로
-
-    results = retrieve(
-        query=query_input["query"],
-        vector_store_path=vector_store_path,
-        top_k=query_input["top_k"],
-        filters=query_input["filters"]
-    )
-    
-
-    for r in results:
-        print("-" * 80)
-        print(f"[Score] {r['rerank_score']:.4f}")
-        print(f"[Text]\n{r['text'][:300]}...")
-"""
